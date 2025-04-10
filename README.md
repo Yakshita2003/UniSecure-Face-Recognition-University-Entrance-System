@@ -1,8 +1,8 @@
-#🎓 UniSecure – Face Recognition University Entrance System
+# 🎓 UniSecure – Face Recognition University Entrance System
 
 UniSecure is a smart and secure facial recognition-based access control system for universities. It provides seamless, role-based entrance and verification for students, faculty/staff, admins, and visitors through real-time webcam-based face recognition and centralized database logging.
 
-##🌟 Key Features
+## 🌟 Key Features
 🔐 Face Recognition-Based Authentication for all user types
 📸 Live Webcam Capture using Streamlit’s st.camera_input
 👤 Role-Based Interfaces for Admin, Student, Faculty/Staff & Visitor
@@ -12,7 +12,7 @@ UniSecure is a smart and secure facial recognition-based access control system f
 📈 Access Log System for every face match attempt
 💾 Local SQLite3 Storage with BLOB image saving
 
-##🛠️ Tech Stack
+## 🛠️ Tech Stack
 UI/Frontend: Streamlit
 Backend	: Python
 Database: SQLite3
@@ -20,7 +20,7 @@ Facial Recognition: face_recognition + OpenCV
 Image Handling: PIL (Pillow)
 UI Enhancements:	Lottie, Streamlit Option Menu
 
-##🧩 Project Structure
+## 🧩 Project Structure
 ├── Home.py               # Main entry UI with page navigation
 ├── Face_Utils.py         # Shared facial encoding and recognition logic
 ├── db.py                 # All database connection and operations
@@ -31,21 +31,21 @@ UI Enhancements:	Lottie, Streamlit Option Menu
     ├── Faculty.py        # Faculty/staff portal: register, recognize, update
     └── Visitor.py        # Visitor face recognition (no registration UI)
 
-##🧭 Navigation Flow
+## 🧭 Navigation Flow
 The project uses st.switch_page() to route users to respective role-specific pages:
 🎓 Students can register, update details, and use face recognition.
 👩‍🏫 Faculty/Staff have a similar experience with designations.
 🧑‍💼 Admins can register, log in, and manage all user data + logs.
 🚶 Visitors can directly verify via facial recognition (no registration UI).
 
-##📝 How Face Recognition Works
+## 📝 How Face Recognition Works
 Users capture live images using webcam (st.camera_input)
 Faces are encoded using the face_recognition library
 Matches are made against existing encodings stored in face_encodings.pkl
 Access is either granted or denied
 All events are logged in the Log table with timestamp and status
 
-##📄 Database Overview
+## 📄 Database Overview
 The SQLite database (UniSecure.db) includes:
 Admin: Username, Gmail, Contact, Image, Password
 Student: Name, Roll_No, Gmail, Course, Stream, Year, Photo, Password
