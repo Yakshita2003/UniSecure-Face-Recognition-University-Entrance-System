@@ -1,4 +1,5 @@
 #🎓 UniSecure – Face Recognition University Entrance System
+
 UniSecure is a smart and secure facial recognition-based access control system for universities. It provides seamless, role-based entrance and verification for students, faculty/staff, admins, and visitors through real-time webcam-based face recognition and centralized database logging.
 
 ##🌟 Key Features
