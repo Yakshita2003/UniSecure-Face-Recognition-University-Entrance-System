@@ -9,4 +9,3 @@ requests
 pandas
 pytz
 dlib==19.22.0
-cmake
