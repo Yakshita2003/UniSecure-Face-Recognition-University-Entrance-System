@@ -40,13 +40,13 @@ def recognize(Utype, Vtype):
     if st.button("Logout",type="primary"):
         st.session_state["Face-recognition_logged_out"] = True
         st.session_state["Face-recognition_verified"] = False
-        st.info("ℹ️ You have been logged out. Captured image deleted.")
+        st.info("ℹ️ You have been logged out.")
         st.rerun()  # Refreshes the app to reflect state changes
 
     st.subheader("🎥 Live Face Recognition")
     with st.container():
         st.info("🔒 Please capture your image for verification.")
-        st.info("ℹ️ Once access is granted, please clear the image by clicking on clear image and log out.")
+        st.info("ℹ️ Once access is granted, please log out to secure your session and clear the image by clicking on clear image.")
         c1, c2 = st.columns([1.5,2])  # Create two columns for layout
         with c1:
             image_file = st.camera_input(f"{Utype} face")  # Use webcam to take photo
