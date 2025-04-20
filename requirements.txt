@@ -1,0 +1,10 @@
+streamlit
+streamlit-lottie
+streamlit-option-menu
+face-recognition
+opencv-python
+numpy
+Pillow
+requests
+pandas
+pytz
