@@ -1,13 +1,14 @@
+cmake
+dlib==19.22.0
+face-recognition
+opencv-python
 streamlit
 streamlit-lottie
 streamlit-option-menu
-face-recognition
-opencv-python
 numpy
 Pillow
 requests
 pandas
 pytz
-dlib==19.22.0
-cmake
+
 
