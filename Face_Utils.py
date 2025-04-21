@@ -28,36 +28,57 @@ def load_encodings():
                 return data  # Return encodings and names
     return [], []  # If file doesn't exist or is invalid, return empty lists
 
-# Face recognition UI and logic using Streamlit
 def recognize(Utype, Vtype):
-    # Initialize session states to track login and verification
+    # Initialize step-based session state for face recognition
+    if "face_step" not in st.session_state:
+        st.session_state.face_step = 1
+    if "face_verified" not in st.session_state:
+        st.session_state.face_verified = False
     if "Face-recognition_logged_out" not in st.session_state:
         st.session_state["Face-recognition_logged_out"] = True
-    if "Face-recognition_verified" not in st.session_state:
-        st.session_state["Face-recognition_verified"] = False
 
-    # Button to logout/reset session
-    if st.button("Logout",type="primary"):
-        st.session_state["Face-recognition_logged_out"] = True
-        st.session_state["Face-recognition_verified"] = False
+    # Logout button
+    if st.button("Logout", type="primary"):
+        for key in ["face_step", "face_verified", "Face-recognition_logged_out"]:
+            if key in st.session_state:
+                st.session_state[key] = False if "verified" in key else True
         st.info("ℹ️ You have been logged out.")
-        st.rerun()  # Refreshes the app to reflect state changes
+        st.rerun()
 
     st.subheader("🎥 Live Face Recognition")
-    with st.container():
+
+    if st.session_state.face_step == 1:
         st.info("🔒 Please capture your image for verification.")
-        st.info("ℹ️ Once access is granted, please log out to secure your session and clear the image by clicking on clear image.")
-        c1, c2 = st.columns([1.5,2])  # Create two columns for layout
+        c1,c2=st.columns(2)
         with c1:
-            image_file = st.camera_input(f"{Utype} face")  # Use webcam to take photo
-        with c2:
-            if st.session_state["Face-recognition_logged_out"]:
-                if image_file:  # If user has captured an image
-                    image = Image.open(image_file)  # Open image using PIL
-                    opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)  # Convert from PIL (RGB) to OpenCV (BGR)
-                    recognize_frame(opencv_image, Utype, Vtype)  # Call recognition logic
+            image_file = st.camera_input(f"{Utype} face")
+
+            if image_file:
+                st.session_state.face_image = image_file
+                st.session_state.face_step = 2
+                st.rerun()
+        with c2: 
+            print('')
+        
+    elif st.session_state.face_step == 2:
+        if "face_image" in st.session_state:
+            st.info("🔍 Verifying your face...")
+            image = Image.open(st.session_state.face_image)
+            opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
+            recognize_frame(opencv_image, Utype, Vtype)
+
+            st.session_state.face_verified = True
+            if st.session_state.face_verified:
+                st.success("✅ Face verified successfully!")
             else:
-                st.success("✅ Face already verified.")  # Display if already verified
+                st.error("❌ Face verification failed.")
+                st.session_state.face_step = 1  # Optionally loop back
+                st.session_state.face_step = 3
+                st.rerun()
+        else:
+            st.warning("⚠️ No image found. Please capture again.")
+            st.session_state.face_step = 1
+            st.rerun()
 
 # Load all face encodings for a given user type from SQLite DB
 def load_face_encodings_from_db(Utype):
