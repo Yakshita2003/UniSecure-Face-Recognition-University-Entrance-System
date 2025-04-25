@@ -46,28 +46,59 @@ def load_lottie_url(url):
 # Admin Login Function
 def login():
     st.subheader("Admin Login")
+    Method = st.selectbox("Login Type", options=["Face Recognition", "Login Form"])
+    if Method == "Login Form":
+        with st.form("Login Form"):
+            Uname = st.text_input("Username")  # Admin's name
+            Gmail = st.text_input("Gmail")  # Admin's Gmail
+            Password = st.text_input("Password", type="password")  # Password
+            submit = st.form_submit_button("Login", type="primary")  # Submit button
 
-    with st.form("Login Form"):
-        Uname = st.text_input("Username")  # Admin's name
-        Gmail = st.text_input("Gmail")  # Admin's Gmail
-        Password = st.text_input("Password", type="password")  # Password
-        submit = st.form_submit_button("Login",type="primary")  # Submit button
-
-    if submit:
-        if not Uname or not Gmail or not Password:
-            st.error("Please fill the form correctly")
-        else:
-            # Fetch user details from database
-            data=(Password,Gmail)
-            admin_data = db.get_admin(data)  # Function to get admin details
-
-            if admin_data:
-                st.session_state["admin_logged_in"] = True
-                st.session_state["admin_name"] = Uname  # Store admin name
-                st.success(f"Welcome, {Uname}! You are now logged in.")
-                st.rerun()  # Refresh page after login
+        if submit:
+            if not Uname or not Gmail or not Password:
+                st.error("Please fill the form correctly")
             else:
-                st.error("Invalid credentials")
+                # Fetch user details from database
+                data = (Password, Gmail)
+                admin_data = db.get_admin(data)  # Function to get admin details
+
+                Usertype = "Admin"
+                Vtype = "Login Form"
+                Status = ""
+                if admin_data:
+                    Status = "Access Granted"
+                    st.session_state["admin_logged_in"] = True
+                    st.session_state["admin_name"] = Uname  # Store admin name
+                    st.success(f"Welcome, {Uname}! You are now logged in.")
+                    st.rerun()  # Refresh page after login
+                else:
+                    Status = "Access Denied"
+                    st.error("Invalid credentials")
+
+                result = db.save_log((Usertype, Uname, Vtype, Status))
+                if result:
+                    st.success("Log saved successfully.")
+                else:
+                    st.error("⚠️ Failed to save log.")
+
+    elif Method == "Face Recognition":
+        with st.form("Login Credentials"):
+            Uname = st.text_input("Username")
+            c1, c2 = st.columns([1, 2])
+            with c1:
+                image = st.camera_input("Face Scan")
+            with c2:
+                print("")
+            submit = st.form_submit_button("Login", type="primary")
+
+        if submit:
+            if not Uname or not image:
+                st.error("Please fill the form correctly")
+            else:
+                admin_recognize(image, Uname)
+
+    del_encodings()
+
 
 # Function to display the Home Page
 def home():
