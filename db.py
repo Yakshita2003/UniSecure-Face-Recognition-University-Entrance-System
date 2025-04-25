@@ -96,10 +96,15 @@ def FS_view(data):
     Retrieves Faculty details from the database.
     """
     try:
-        cursor.execute("SELECT * FROM Faculty WHERE Gmail=? AND Password=?", data)
-        return cursor.fetchone()
+        cursor.execute('''SELECT * FROM Faculty WHERE Gmail=? AND Password=?''', data)
+        res=cursor.fetchone()
+        if res:
+            return res
+        else:
+            return False
     except Exception as e:
         st.error(f"Something went wrong: {e}")
+        return False
 
 def f_readone(data):
     """Fetch a single Faculty record."""
