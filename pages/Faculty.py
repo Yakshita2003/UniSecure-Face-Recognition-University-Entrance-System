@@ -203,7 +203,7 @@ if selected == "Home":
 elif selected == "Register":
     register()
 elif selected=="User Verification":
-    st.header("User Verification")
+    st.header("Faculty Verification")
     Vtype=st.selectbox("Verification type",options=["Face recognition","Email OTP"])
     if Vtype=="Email OTP":
         Vtype="Email OTP"
