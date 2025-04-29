@@ -314,23 +314,24 @@ def v_update():
 def v_delete():
     gmail = st.text_input("Enter Visitor Gmail to delete:")
 
-    if st.button("Delete Visitor",type="primary"):
+    if st.button("Delete Visitor", type="primary"):
         res = db.get_visitor_by_gmail(gmail)
         if res:
             st.session_state.visitor_to_delete = gmail
             st.session_state.visitor_found = res
         else:
+            # Clear old data if no visitor found
             st.error("No visitor found with this Gmail.")
-    
+            st.session_state.pop("visitor_to_delete", None)
+            st.session_state.pop("visitor_found", None)
+
     if "visitor_to_delete" in st.session_state:
         confirm = st.checkbox("Are you sure you want to delete this visitor?")
-        button=st.button("Confirm Delete",type="primary")
-        st.write("Visitor Found:",st.session_state.visitor_found)
+        button = st.button("Confirm Delete", type="primary")
+        st.write("Visitor Found:", st.session_state.visitor_found)
         if confirm and button:
-            db.delete_visitor_by_gmail(gmail)
+            db.delete_visitor_by_gmail(st.session_state.visitor_to_delete)
             st.success("Visitor deleted successfully.")
-            # Clean up session state
+            # Clean up session state after deletion
             del st.session_state.visitor_to_delete
             del st.session_state.visitor_found
-        else:
-            st.error("No visitor found with this Gmail.")
