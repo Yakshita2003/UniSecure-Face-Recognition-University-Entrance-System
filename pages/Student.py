@@ -5,7 +5,6 @@ from streamlit_option_menu import option_menu
 import requests as r
 import db
 from PIL import Image
-import cv2
 from Face_Utils import recognize,del_encodings
 from Gmail import main
 
