@@ -8,6 +8,7 @@ from PIL import Image
 import io
 import pandas as pd
 import utils as u
+from Face_Utils import admin_recognize,del_encodings
 
 st.set_page_config(page_title="Admin Portal", layout="wide")
 
@@ -49,7 +50,7 @@ def login():
     Method = st.selectbox("Login Type", options=["Face Recognition", "Login Form"])
     if Method == "Login Form":
         with st.form("Login Form"):
-            Uname = st.text_input("Username")  # Admin's name
+            Uname = st.text_input("Username") # Admin's name
             Gmail = st.text_input("Gmail")  # Admin's Gmail
             Password = st.text_input("Password", type="password")  # Password
             submit = st.form_submit_button("Login", type="primary")  # Submit button
@@ -59,7 +60,7 @@ def login():
                 st.error("Please fill the form correctly")
             else:
                 # Fetch user details from database
-                data = (Password, Gmail)
+                data = (Password, str.lower(Gmail))
                 admin_data = db.get_admin(data)  # Function to get admin details
 
                 Usertype = "Admin"
@@ -75,7 +76,7 @@ def login():
                     Status = "Access Denied"
                     st.error("Invalid credentials")
 
-                result = db.save_log((Usertype, Uname, Vtype, Status))
+                result = db.save_log((Usertype, str.lower(Uname), Vtype, Status))
                 if result:
                     st.success("Log saved successfully.")
                 else:
@@ -95,10 +96,9 @@ def login():
             if not Uname or not image:
                 st.error("Please fill the form correctly")
             else:
-                admin_recognize(image, Uname)
+                admin_recognize(image, Uname.lower())
 
     del_encodings()
-
 
 # Function to display the Home Page
 def home():
@@ -132,7 +132,7 @@ def home():
 
 # Function for Admin registration
 def register():
-    st.header("Admin Registration")
+    st.subheader("Admin Registration")
 
     with st.form("Registration Form"):
         c1,c2=st.columns(2)
@@ -159,7 +159,7 @@ def register():
             img_data = img_byte_arr.getvalue()
 
             # Prepare data tuple for database insertion
-            data = (Uname, Gmail, Contact, img_data, Password)
+            data = (Uname.lower(), str.lower(Gmail), Contact, img_data, Password)
             
             # Call database function to store Admin information
             db.A_reg(data)
@@ -200,25 +200,30 @@ def view():
     if submit:
         if search_name:
             filtered_df = df[df.apply(lambda row: search_name.lower() in row.astype(str).str.lower().to_list(), axis=1)]
-            filtered_photos = [photos[i] for i in filtered_df.index]  # Filter images too
+            if Utype!="Log":
+                filtered_photos = [photos[i] for i in filtered_df.index]  # Filter images too
         else:
-            filtered_df = df  # Show full dataset
-            filtered_photos = photos
+            if Utype!="Log":
+                filtered_df = df  # Show full dataset
+                filtered_photos = photos
+            else:
+                filtered_df=df
 
         # **Display Data in Table Format**
         st.subheader("User Details")
         st.dataframe(filtered_df)
 
         # **Display Images**
-        st.subheader("User Photos")
-        cols = st.columns(3)  # Arrange images in columns
-        for i, photo in enumerate(filtered_photos):
-            if isinstance(photo, bytes):  # If stored as binary (BLOB)
-                image = Image.open(io.BytesIO(photo))
-            else:  # If stored as a file path
-                image = Image.open(photo)
+        if Utype!="Log":
+            st.subheader("User Photos")
+            cols = st.columns(3)  # Arrange images in columns
+            for i, photo in enumerate(filtered_photos):
+                if isinstance(photo, bytes):  # If stored as binary (BLOB)
+                    image = Image.open(io.BytesIO(photo))
+                else:  # If stored as a file path
+                    image = Image.open(photo)
 
-            cols[i % 3].image(image, caption=filtered_df.iloc[i, 1], width=100)  # Show image with name
+                cols[i % 3].image(image, caption=filtered_df.iloc[i, 1], width=100)  # Show image with name
 
 # --- Helper Functions ---
 def admin_login_form():
@@ -234,7 +239,7 @@ def admin_login_form():
             return None
         else:
             # Fetch user details from database
-            data = (Gmail, Password)
+            data = (str.lower(Gmail), Password)
             admin_data = db.A_readone(data)  # Function to get admin details
 
             if admin_data:
@@ -285,7 +290,7 @@ def show_admin_update_form(admin_data):
 
             # Prepare update data
             update_result = db.A_update((
-                Uname, Gmail, Contact, img_data, Password,
+                Uname, str.lower(Gmail), Contact, img_data, Password,
                 admin_data[2] if isinstance(admin_data, tuple) else admin_data.get('Gmail', ''),  # old Gmail
                 admin_data[5] if isinstance(admin_data, tuple) else admin_data.get('Password', '')  # old password
             ))
@@ -366,7 +371,7 @@ def Add():
 
     # **User Type Selection in Form Format**
     with st.container(border=True):
-        Utype = st.selectbox("User Type", options=["Student", "Faculty", "Visitor", "Admin"])
+        Utype = st.selectbox("User Type", options=["Admin", "Faculty", "Visitor", "Student"])
     if Utype == "Student":
         u.s_register()
     elif Utype == "Faculty":
