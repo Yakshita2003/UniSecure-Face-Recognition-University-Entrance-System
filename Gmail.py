@@ -1,9 +1,9 @@
-import smtplib
-import random
-import ssl
-from email.message import EmailMessage
+import smtplib #handles the transmission of messages via SMTP
+import random #offers functions for generating random integers, floating-point numbers, and selecting random elements from sequences like lists
+import ssl #(Secure Sockets Layer) library is a software toolkit that provides the necessary functions and tools to implement Secure Sockets Layer (SSL) or Transport Layer Security (TLS) protocols for secure network communication
+from email.message import EmailMessage #focuses on message structure 
 import streamlit as st
-import re
+import re #provides tools for pattern matching and manipulation in strings
 import db
 
 def generate_otp():
@@ -41,7 +41,7 @@ def save(Utype, uname, Vtype, status):
     else:
         st.error("Something went wrong")
 
-def main(Utype, Vtype):
+def main(Utype, Vtype="Email Verification"):
     # Initialize Gmail-related session states
     if "gmail_logged_in" not in st.session_state:
         st.session_state["gmail_logged_in"] = False
@@ -71,7 +71,7 @@ def main(Utype, Vtype):
         with st.form("Form"):
             uname = st.text_input("Username")
             email = st.text_input("Email:")
-            submit = st.form_submit_button("Verify Email", type="primary")
+            submit = st.form_submit_button("Verify Email 📧", type="primary")
 
         if submit:
             if is_valid_email(email):
@@ -92,8 +92,10 @@ def main(Utype, Vtype):
     if st.session_state.step == 2:
         st.info("Generating OTP...")
         send_otp(st.session_state.email, st.session_state.otp)
-        st.success(f"OTP sent to {st.session_state.uname} on {st.session_state.email}")
+        st.success(f"🔑OTP sent to {st.session_state.uname} on {st.session_state.email}")
+
         user_input = st.text_input("Enter the OTP sent to your email:")
+               
         if st.button("Submit OTP", type="primary"):
             if verify_otp(user_input, st.session_state.otp):
                 st.success("✅ Verification successful! Access Granted")
@@ -106,3 +108,4 @@ def main(Utype, Vtype):
                 status = "Access Denied"
 
             save(Utype, st.session_state.uname, Vtype, status)
+
