@@ -4,7 +4,7 @@ from streamlit_lottie import st_lottie
 from streamlit_option_menu import option_menu
 import requests as r
 import db
-from PIL import Image
+from PIL import Image #library for image processing
 from Face_Utils import recognize,del_encodings
 from Gmail import main
 
@@ -21,7 +21,7 @@ st.markdown(
 
 if st.button("Go To Home Page",type="primary"):
     del_encodings()
-    for key in list(st.session_state.keys()):
+    for key in list(st.session_state.keys()) :
         del st.session_state[key]
     st.switch_page("Home.py")
 
@@ -80,14 +80,8 @@ def register():
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='PNG')
             img_data = img_byte_arr.getvalue()
-            data = (Name, Roll, Gmail, Course, Stream, Year, img_data, password)
+            data = (Name, Roll, str.lower(Gmail), Course, Stream, Year, img_data, password)
             db.stu_reg(data)
-            cap = cv2.VideoCapture(0)
-            ret, frame = cap.read()
-            if ret:
-                image = frame
-            else:
-                image = None
 
 # Function to view student data
 def view():
@@ -176,7 +170,7 @@ def show_update_form(res):
                     img_data = res[7]
 
                 result = db.stu_update((
-                    Name, Roll, Gmail, Course, Stream, Year, img_data, password_input,
+                    Name, Roll, str.lower(Gmail), Course, Stream, Year, img_data, password_input,
                     res[2], res[3], res[8]  # old Roll, Gmail, Password
                 ))
 
@@ -209,10 +203,11 @@ def update():
             if st.button("Logout",type="primary"):
                 st.session_state.authenticated = False
                 st.session_state.student_data = None
-                st.experimental_rerun()
+                st.rerun()
             show_update_form(st.session_state.student_data)
  
 Utype="Student"
+
 # Sidebar menu for navigation
 selected = option_menu(None, ["Home", "Register", "User Verification","View Data", "Update Data"], 
                        icons=["house", "person-plus","camera","table", "pencil"], 
