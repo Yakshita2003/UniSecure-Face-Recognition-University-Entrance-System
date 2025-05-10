@@ -10,5 +10,6 @@ Pillow
 requests
 pandas
 pytz
-
+smtplib
+Email
 
