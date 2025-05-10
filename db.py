@@ -1,7 +1,7 @@
-import sqlite3
+import sqlite3 #Provides an interface to work with SQLite databases.
 import streamlit as st
-import pytz
-import datetime
+import pytz  #Full Form "Python Time Zone" and use is facilitates working with time zones, especially those in the Olson database (also known as the IANA time zone database).
+import datetime # provides classes for working with dates and times.
 
 def create_connect():
     """
@@ -224,7 +224,7 @@ def view(Utype):
         elif Utype=="Visitor":
             res=cursor.execute(f'''SELECT Id,Name, Gmail, Contact,Id_type, Id_no, Purpose, Photo FROM Visitor''')
         elif Utype=="Log":
-            res=cursor.execute(f'''SELECT ID,Usertype,Username,VerificationType,Status,Timestamp FROM Log''')
+            res=cursor.execute(f'''SELECT ID,Usertype,Username,Status,Timestamp,VerificationType FROM Access_Logs''')
         st.success(f"{Utype} Database Found Successfully")
         return res
     except Exception as e:
@@ -255,8 +255,6 @@ def get_faculty_by_gmail(gmail):
     return result
 
 def V_view_by_contact(contact):
-    conn = sqlite3.connect("your_database.db")
-    cur = conn.cursor()
     cursor.execute("SELECT * FROM visitor WHERE Contact=?", (contact,))
     result = cursor.fetchone()
     return result
@@ -286,7 +284,7 @@ def save_log(data):
 
         # Insert into table with manual IST timestamp
         cursor.execute('''
-            INSERT INTO Log (Usertype, Username,VerificationType, Status, Timestamp)
+            INSERT INTO Access_Logs (Usertype, Username, Status, VerificationType, Timestamp)
             VALUES (?, ?, ?, ?, ?)
         ''', data_with_timestamp)
 
@@ -298,7 +296,7 @@ def save_log(data):
     
 # -------- Faculty --------
 def get_faculty_by_gmail(gmail):
-    cursor.execute("SELECT Id,Name, Gmail, Designation FROM faculty WHERE Gmail = ?", (gmail,))
+    cursor.execute("SELECT ID,Name, Gmail,Designation FROM faculty WHERE Gmail = ?", (gmail,))
     result= cursor.fetchone()
     return result
 
@@ -315,10 +313,9 @@ def delete_student_by_gmail(gmail):
     cursor.execute("DELETE FROM student WHERE Gmail = ?", (gmail,))
     conn.commit()
     
-
 # -------- Visitor --------
 def get_visitor_by_gmail(gmail):
-    cursor.execute("SELECT Id,Name, Gmail, Contact,Id_type, Id_no, Purpose FROM visitor WHERE Gmail = ?", (gmail,))
+    cursor.execute("SELECT ID,Name, Contact, ID_type, ID_no, Purpose FROM visitor WHERE Gmail = ?", (gmail,))
     return cursor.fetchone()
 
 def delete_visitor_by_gmail(gmail):
