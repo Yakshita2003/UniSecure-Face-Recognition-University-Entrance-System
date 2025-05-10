@@ -163,7 +163,6 @@ def register():
             
             # Call database function to store Admin information
             db.A_reg(data)
-            st.success("Admin registered successfully!")
 
 # Function to view database records
 def view():
