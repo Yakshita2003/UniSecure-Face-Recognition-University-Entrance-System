@@ -245,12 +245,7 @@ def get_admin(data):
         return False
 
 def get_student_by_id(data):
-    cursor.execute("SELECT * FROM student WHERE Roll_No=?", (data,))
-    result = cursor.fetchone()
-    return result
-
-def get_faculty_by_gmail(gmail):
-    cursor.execute("SELECT * FROM faculty WHERE Gmail=?", (gmail,))
+    cursor.execute("SELECT * FROM Student WHERE Roll_No=?", (data,))
     result = cursor.fetchone()
     return result
 
@@ -296,7 +291,7 @@ def save_log(data):
     
 # -------- Faculty --------
 def get_faculty_by_gmail(gmail):
-    cursor.execute("SELECT ID,Name, Gmail,Designation FROM faculty WHERE Gmail = ?", (gmail,))
+    cursor.execute("SELECT * FROM Faculty WHERE Gmail = ?", (gmail,))
     result= cursor.fetchone()
     return result
 
@@ -306,16 +301,16 @@ def delete_faculty_by_gmail(gmail):
 
 # -------- Student --------
 def get_student_by_gmail(gmail):
-    cursor.execute("SELECT Id,Name, Roll_No, Gmail, Course, Stream, Year FROM student WHERE Gmail = ?", (gmail,))
+    cursor.execute("SELECT Id,Name, Roll_No, Gmail, Course, Stream, Year FROM Student WHERE Gmail = ?", (gmail,))
     return cursor.fetchone()
 
 def delete_student_by_gmail(gmail):
-    cursor.execute("DELETE FROM student WHERE Gmail = ?", (gmail,))
+    cursor.execute("DELETE FROM Student WHERE Gmail = ?", (gmail,))
     conn.commit()
     
 # -------- Visitor --------
 def get_visitor_by_gmail(gmail):
-    cursor.execute("SELECT ID,Name, Contact, ID_type, ID_no, Purpose FROM visitor WHERE Gmail = ?", (gmail,))
+    cursor.execute("SELECT * FROM visitor WHERE Gmail = ?", (gmail,))
     return cursor.fetchone()
 
 def delete_visitor_by_gmail(gmail):
