@@ -22,7 +22,25 @@ def send_otp(receiver_email, otp):
     message["Subject"] = subject
     message.set_content(body)
 
-    context = ssl.create_default_context()
+    context = ssl.create_default_context() 
+    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
+        server.login(sender_email, sender_password)
+        server.send_message(message)
+
+def send_password(receiver_email,res):
+    sender_email = "unisecure25@gmail.com"
+    sender_password = "iugy yequ xleq jujc"
+
+    subject = "Your OTP for Verification"
+    body = f"Your UniSecure Id login password is: {res}"
+
+    message = EmailMessage()
+    message["From"] = sender_email
+    message["To"] = receiver_email
+    message["Subject"] = subject
+    message.set_content(body)
+
+    context = ssl.create_default_context() 
     with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
         server.login(sender_email, sender_password)
         server.send_message(message)
@@ -41,14 +59,21 @@ def save(Utype, uname, Vtype, status):
     else:
         st.error("Something went wrong")
 
+# Initialize Gmail-related session states
+if "gmail_logged_in" not in st.session_state:
+    st.session_state["gmail_logged_in"] = False
+if "gmail_user" not in st.session_state:
+    st.session_state["gmail_user"] = ""
+if "gmail_verified" not in st.session_state:
+    st.session_state["gmail_verified"] = False
+
 def main(Utype, Vtype="Email Verification"):
-    # Initialize Gmail-related session states
-    if "gmail_logged_in" not in st.session_state:
-        st.session_state["gmail_logged_in"] = False
-    if "gmail_user" not in st.session_state:
-        st.session_state["gmail_user"] = ""
-    if "gmail_verified" not in st.session_state:
-        st.session_state["gmail_verified"] = False
+    if 'step' not in st.session_state:
+        st.session_state.step = 1
+    if 'otp' not in st.session_state:
+        st.session_state.otp = ""
+    if 'uname' not in st.session_state:
+        st.session_state.uname = ""
 
     # LOGOUT button
     if st.button("Logout", type="primary"):
@@ -58,14 +83,6 @@ def main(Utype, Vtype="Email Verification"):
         st.rerun()
 
     st.header("Email OTP Verification")
-
-    # Step 1: Input username & email
-    if 'step' not in st.session_state:
-        st.session_state.step = 1
-    if 'otp' not in st.session_state:
-        st.session_state.otp = ""
-    if 'uname' not in st.session_state:
-        st.session_state.uname = ""
 
     if st.session_state.step == 1:
         with st.form("Form"):
@@ -108,4 +125,3 @@ def main(Utype, Vtype="Email Verification"):
                 status = "Access Denied"
 
             save(Utype, st.session_state.uname, Vtype, status)
-
