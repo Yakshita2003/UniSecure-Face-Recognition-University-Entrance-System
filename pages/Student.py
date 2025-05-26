@@ -6,7 +6,7 @@ import requests as r
 import db
 from PIL import Image #library for image processing
 from Face_Utils import recognize,del_encodings
-from Gmail import main
+from Gmail import main,forget_password
 
 st.set_page_config(page_title="Student Portal", layout="wide")
 
@@ -32,9 +32,9 @@ def load_lottie_url(url):
         if r1.status_code != 200:
             return None
         return r1.json()  
-    except ValueError as e:
-        print(f"Error decoding JSON: {e}")
+    except Exception:
         return None
+   
 
 # Function to display the Home Page
 def home():
@@ -47,13 +47,13 @@ def home():
             if lottie_json1:
                 st_lottie(lottie_json1, speed=1, height=200, quality="high", key="lottie1")
             else:
-                st.error("Failed to load Lottie animation.")
+                st.image("pages/3d-portrait-high-school-teenager.png",width=200,use_container_width=True)
         with c2:
-            st.markdown("""
-            <div style="background-color: #f0f0f0; padding: 20px; border-radius: 10px; text-align: center;">
-                <h2 style="color: #333;">Welcome to the Student Portal of UniSecure!</h2>
-            </div>
-            """, unsafe_allow_html=True)
+            st.markdown(""" 
+                <div style="background-color: #f0f0f0; padding: 20px; border-radius: 10px; text-align: center;">
+                    <h2 style="color: #333;">Welcome to the Student Portal of UniSecure!</h2>
+                </div>
+                """, unsafe_allow_html=True)
 
 # Function for student registration
 def register():
@@ -120,9 +120,9 @@ def login_form():
         with st.form("Login Form"):
             G = st.text_input("Gmail")
             R = st.number_input("StudentID(13 Digit)/Roll_No(11 Digit)", min_value=1, step=1)
-            p = st.text_input("Password", type="password")
+            p = st.text_input("Password", type="password")  
             submit = st.form_submit_button("Submit", type="primary")
-
+        
         if submit:
             if not G or not R or not p:
                 st.error("Please fill the form correctly")
@@ -135,6 +135,7 @@ def login_form():
             else:
                 st.error("Invalid Credentials!")
                 return None
+        
         return None
 
 def show_update_form(res):
