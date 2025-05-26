@@ -1,342 +1,331 @@
-import io
+import sqlite3 #Provides an interface to work with SQLite databases.
 import streamlit as st
-import db
-from PIL import Image
+import pytz  #Full Form "Python Time Zone" and use is facilitates working with time zones, especially those in the Olson database (also known as the IANA time zone database).
+import datetime # provides classes for working with dates and times.
 
-'''Student Utils to admin'''
-# Function for student registration
-def s_register():
-    with st.form("Student Registration Form"):
-        c1,c2=st.columns(2)
-        with c1:
-            Name = st.text_input("Name")
-            Roll = st.number_input("StuID/R_No", min_value=1, step=1)
-            Gmail = st.text_input("Gmail")
-            Course = st.selectbox("Course", options=["B.Tech", "M.Tech"])
-            Stream = st.selectbox("Stream", options=["ENC", "ECE", "CSE"])
-            Year = st.selectbox("Year", options=[1, 2, 3, 4])
-        with c2:
-            Image_file = st.camera_input("Image")
-            password = st.text_input("Password", type="password")
-        submit = st.form_submit_button("Register",type="primary")
+def create_connect():
+    """
+    Establishes a connection to the SQLite database.
+    """
+    conn = sqlite3.connect("UniSecure.db", check_same_thread=False)
+    return conn
 
-    if submit:
-        if not Name or not Roll or not Gmail or not Course or not Stream or not Year or not Image_file or not password:
-            st.error("Please fill the form correctly")
+# Create database connection and cursor
+conn = create_connect()
+cursor = conn.cursor()
+
+def stu_reg(data):
+    """
+    Registers a new student into the database.
+    """
+    try:
+        cursor.execute('''INSERT INTO Student (Name, Roll_No, Gmail, Course, Stream, Year, Photo, Password) 
+                          VALUES (?, ?, ?, ?, ?, ?, ?, ?)''', data)
+        r=conn.commit()
+        st.success("Student Registered Successfully!")
+    except sqlite3.IntegrityError as e:
+        st.error("Duplicate entry detected")
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
+
+def stu_view(data):
+    """
+    Retrieves a student's information from the database based on provided credentials.
+    """
+    try:
+        cursor.execute("SELECT * FROM Student WHERE Gmail=? AND Roll_No=? AND Password=?", data)
+        result = cursor.fetchone()
+        if result:
+            return result
         else:
-            image = Image.open(Image_file)
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')
-            img_data = img_byte_arr.getvalue()
-            data = (Name, Roll, Gmail, Course, Stream, Year, img_data, password)
-            db.stu_reg(data)
+            st.warning("No student found with the provided details.")
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
-#Student Updation Form
-def show_update_form(res):
-        st.subheader("Update Student Details")
+def s_readone(data):
+    """Fetch a single student record."""
+    try:
+        cursor.execute(
+            "SELECT * FROM Student WHERE Roll_No=? AND Gmail=? AND Password=?", data
+        )
+        return cursor.fetchone()
+    except Exception as e:
+        st.error(f"Error fetching student data: {e}")
 
-        with st.form("Updation Form"):
-            c1, c2 = st.columns([1.5, 1])
-            with c1:
-                Name = st.text_input("Name", value=res[1])
-                Roll = st.number_input("StudentID(13 Digit)/Roll_No(11 Digit)", min_value=1, step=1, value=res[2])
-                Gmail = st.text_input("Gmail", value=res[3])
-                Course = st.selectbox("Course", ["B.Tech", "M.Tech"], index=["B.Tech", "M.Tech"].index(res[4]))
-                Stream = st.selectbox("Stream", ["ENC", "ECE", "CSE"], index=["ENC", "ECE", "CSE"].index(res[5]))
-                Year = st.selectbox("Year", [1, 2, 3, 4], index=[1, 2, 3, 4].index(res[6]))
-                password_input = st.text_input("Password", type="password", value=res[8])
-            with c2:
-                if res[7]:
-                    st.image(res[7], caption="Current Image", use_container_width=True)
-                Image_file = st.camera_input("Capture New Image")
+def stu_update(data):
+    """
+    Update student details based on Roll_No, Gmail, and Password.
 
-            submit_update = st.form_submit_button("Update", type="primary")
+    Expected `data` format:
+    (Name, Roll_No, Gmail, Course, Stream, Year, Photo, Password, Old_Roll, Old_Gmail, Old_Password)
+    """
+    try:
+        query = '''
+            UPDATE Student 
+            SET Name=?, Roll_No=?, Gmail=?, Course=?, Stream=?, Year=?, Photo=?, Password=? 
+            WHERE Roll_No=? AND Gmail=? AND Password=?
+        '''
+        cursor.execute(query, data)
+        conn.commit()
+        if cursor.rowcount == 0:
+            print("⚠️ No rows updated. Invalid credentials or no changes.")
+            return False
+        return True
+    except sqlite3.IntegrityError as ie:
+        print("❌ Integrity error:", ie)
+        return False
+    except Exception as e:
+        print("❌ General DB error:", e)
+        return False
 
-        if submit_update:
-            if not Name or not Roll or not Gmail or not Course or not Stream or not Year or not password_input:
-                st.error("Please fill all fields before updating.")
-            else:
-                if Image_file:
-                    image = Image.open(Image_file)
-                    img_byte_arr = io.BytesIO()
-                    image.save(img_byte_arr, format='PNG')
-                    img_data = img_byte_arr.getvalue()
-                else:
-                    img_data = res[7]
+def FS_reg(data):
+    """
+    Registers Faculty in the database.
+    """
+    try:
+        cursor.execute("INSERT INTO Faculty (Name, Gmail,Designation, Photo,Password) VALUES (?, ?, ?,?,?)", data)
+        conn.commit()
+        st.success("Faculty Registered Successfully!")
+    except sqlite3.IntegrityError:
+        st.error("Duplicate entry detected.")
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
-                result = db.stu_update((
-                    Name, Roll, Gmail, Course, Stream, Year, img_data, password_input,
-                    res[2], res[3], res[8]  # old Roll, Gmail, Password
-                ))
-
-                if result:
-                    st.success("Student details updated successfully!")
-                    st.session_state.authenticated = False
-                    st.session_state.student_data = None
-                else:
-                    st.error("Something went wrong during update.")
-
-# Function to update student data
-def s_update():
-    st.header("Update Student Details")
-
-    student_id = st.number_input("Enter Student Roll No / ID", min_value=0, step=1)
-    
-    if st.button("Fetch Student",type="primary"):
-        res = db.get_student_by_id(student_id)
+def FS_view(data):
+    """
+    Retrieves Faculty details from the database.
+    """
+    try:
+        cursor.execute('''SELECT * FROM Faculty WHERE Gmail=? AND Password=?''', data)
+        res=cursor.fetchone()
         if res:
-            st.session_state.student_data = res
+            return res
         else:
-            st.error("Student not found.")
+            return False
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
+        return False
 
-    if "student_data" in st.session_state and st.session_state.student_data:
-        show_update_form(st.session_state.student_data)
+def f_readone(data):
+    """Fetch a single Faculty record."""
+    try:
+        cursor.execute(
+            "SELECT * FROM Faculty WHERE Gmail=? AND Password=?", data
+        )
+        return cursor.fetchone()
+    except Exception as e:
+        st.error(f"Error fetching Faculty data: {e}")
 
-def s_delete():
-    gmail = st.text_input("Enter Student Gmail to delete:")
-
-    if st.button("Delete Student", type="primary"):
-        res = db.get_student_by_gmail(gmail)
-        if res:
-            st.session_state.student_to_delete = gmail
-            st.session_state.student_found = res
-        else:
-            st.error("No student found with this Gmail.")
-
-    # If student was found and stored in session_state
-    if "student_to_delete" in st.session_state:
-        confirm = st.checkbox("Are you sure you want to delete this student?")
-        button=st.button("Confirm Delete", type="primary")
-        st.write("Student Found:", st.session_state.student_found)
-        if button and confirm:
-            db.delete_student_by_gmail(st.session_state.student_to_delete)
-            st.success("Student deleted successfully.")
-            # Clean up session state
-            del st.session_state.student_to_delete
-            del st.session_state.student_found
-
-'''Faculty utils to admin'''
-# Function for Faculty registration
-def f_register():
-    st.header("Faculty Registration Page")
-    with st.form("Registration Form"):
-        c1, c2 = st.columns(2)
-        with c1:
-            Name = st.text_input("Name")
-            Gmail = st.text_input("Gmail")
-            Designation = st.text_input("Designation")
-            Password = st.text_input("Password", type="password")
-        with c2:
-            Image_file = st.camera_input("Image")
-        submit = st.form_submit_button("Register",type="primary")
-
-    if submit:
-        if not Name or not Gmail or not Designation or not Image_file or not Password:
-            st.error("Please fill the form correctly")
-        else:
-            image = Image.open(Image_file)
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')
-            img_data = img_byte_arr.getvalue()
-            data = (Name, Gmail, Designation, img_data, Password)
-            db.FS_reg(data)
-
-# ---------- Show Faculty Update Form ----------
-def show_faculty_update_form(res):
-    st.subheader("Update Faculty Details")
-
-    with st.form("Faculty Update Form"):
-        c1, c2, c3 = st.columns([1, 1, 1])
+def f_update(data):
+    """
+    Update faculty details in the database.
+    data: (Name, Gmail, Designation, Photo, Password, old_Gmail, old_Password)
+    """
+    try:
+        query = '''UPDATE Faculty
+                   SET Name=?, Gmail=?, Designation=?, Photo=?, Password=? 
+                   WHERE Gmail=? AND Password=?'''
         
-        # Left column: text inputs
-        with c1:
-            Name = st.text_input("Name", value=res[1])
-            Gmail = st.text_input("Gmail", value=res[2])
-            Designation = st.text_input("Designation", value=res[3])
-            Password=st.text_input("Password",type="password",value=res[5])
-        
-        # Middle column: current photo display
-        with c2:
-            if res[4]:
-                st.image(res[4], caption="Current Image", use_container_width=True)
-        
-        # Right column: new image input
-        with c3:
-            Image_file = st.camera_input("Capture New Image")
+        # Ensure data is flat (not nested)
+        cursor.execute(query, data)
+        conn.commit()
 
-        # Submit button
-        submit_update = st.form_submit_button("Update", type="primary")
+        # Check if any row was actually updated
+        return cursor.rowcount > 0
+    except Exception as e:
+        print(f"Something went wrong: {e}")
+        return False
 
-    # Handle form submission
-    if submit_update:
-        if not Name or not Gmail or not Designation or not Password:
-            st.error("Please fill all fields before updating.")
-        else:
-            # Handle image update (new or keep existing)
-            if Image_file:
-                image = Image.open(Image_file)
-                img_byte_arr = io.BytesIO()
-                image.save(img_byte_arr, format='PNG')
-                img_data = img_byte_arr.getvalue()
-            else:
-                img_data = res[4]
+def V_reg(data):
+    """
+    Registers a visitor in the database.
+    """
+    try:
+        cursor.execute("INSERT INTO Visitor (Name, Contact, ID_type, ID_no, Purpose, Photo) VALUES (?, ?, ?, ?, ?, ?)", data)
+        conn.commit()
+        st.success("Visitor Registered Successfully!")
+    except sqlite3.IntegrityError:
+        st.error("Duplicate entry detected.")
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
-            # Update the database
-            result = db.f_update((
-                Name, Gmail, Designation, img_data,Password,
-                res[2], res[5]  # old Gmail, old Password
-            ))
+def V_view(data):
+    """
+    Retrieves Visitor details from the database using Name, Contact.
+    """
+    try:
+        cursor.execute("SELECT * FROM Visitor WHERE Contact=?", (data,))
+        return cursor.fetchone()
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
-            if result:
-                st.success("Faculty details updated successfully!")
-                st.session_state.faculty_authenticated = False
-                st.session_state.faculty_data = None
-            else:
-                st.error("Something went wrong during update.")
-
-# ---------- Main Faculty Update Controller ----------
-def f_update():
-    st.header("Update Faculty Details")
-
-    gmail = st.text_input("Enter Faculty Gmail")
+def V_update(id, name, gmail, contact, id_type, id_no, purpose, photo_bytes):
+    try:
+        query = """
+        UPDATE visitors
+        SET name = ?, gmail = ?, contact = ?, id_type = ?, id_no = ?, purpose = ?, photo = ?
+        WHERE id = ?
+        """
+        cursor.execute(query, (name, gmail, contact, id_type, id_no, purpose, photo_bytes, id))
+        conn.commit()
+        return True
+    except Exception as e:
+        print("Update Error:", e)
+        return False
     
-    if st.button("Fetch Faculty",type="primary"):
-        res = db.get_faculty_by_gmail(gmail)
-        if res:
-            st.session_state.faculty_data = res
-            st.rerun()
-        else:
-            st.error("Faculty not found.")
+def A_reg(data):
+    """
+    Registers Admin in the database.
+    """
+    try:
+        cursor.execute("INSERT INTO Admin (Username,Gmail, Contact,Image,Password) VALUES (?, ?, ?,?,?)", data)
+        conn.commit()
+        st.success("Admin Registered Successfully!")
+    except sqlite3.IntegrityError:
+        st.error("Duplicate entry detected.")
+    except Exception as e:
+        st.error(f"Something went wrong: {e}")
 
-    if "faculty_data" in st.session_state and st.session_state.faculty_data:
-        show_faculty_update_form(st.session_state.faculty_data)
-
-def f_delete():
-    gmail = st.text_input("Enter Faculty Gmail to delete:")
-
-    if st.button("Delete Faculty", type="primary"):
-        res = db.get_faculty_by_gmail(gmail)
-        if res:
-            res=list(res)
-            st.session_state.faculty_to_delete = gmail
-            st.session_state.faculty_found = tuple(res[:4]),res[5]
-        else:
-            st.error("No faculty found with this Gmail.")
-
-    if "faculty_to_delete" in st.session_state:
-        confirm = st.checkbox("Are you sure you want to delete this faculty?")
-        button=st.button("Confirm Delete", type="primary")
-        st.write("Faculty Found:", st.session_state.faculty_found)
-        if button and confirm:
-            db.delete_faculty_by_gmail(st.session_state.faculty_to_delete)
-            st.success("Faculty deleted successfully.")
-            # Clean up session state
-            del st.session_state.faculty_to_delete
-            del st.session_state.faculty_found
-
-'''Visitor Utils to admin'''   
-# Function for Visitor registration
-def v_register():
-    st.header("Visitor Registration Page")
-    with st.form("Visitor Registration Form"):
-        c1,c2=st.columns(2)
-        with c1:
-            Name = st.text_input("Name")
-            Gmail=st.text_input("Gmail")
-            Contact = st.number_input("Contact No. (10-digits number)", format="%d", step=1)
-            ID_type = st.selectbox("ID Type", ["Aadhar Card", "Driving Licence", "Pan Card", "Other"])
-            ID_no = st.text_input("ID Number")
-            Purpose = st.text_input("Visiting Purpose")
-        with c2:
-            Image_file = st.camera_input("Capture Image")
-        submit = st.form_submit_button("Register",type="primary")
+def A_readone(data):
+    """Fetch a single Admin record."""
+    try:
+        cursor.execute(
+            '''SELECT * FROM Admin WHERE Gmail=? AND Password=?''', data
+        )
+        return cursor.fetchone()
+    except sqlite3.Error as e:  # Use specific exception
+        st.error(f"Error fetching Admin data: {e}")
+        return None  # Important to return None in case of error
     
-    if submit:
-        if not Name or not Contact or not ID_type or not ID_no or not Purpose or not Image_file or not Gmail:
-            st.error("Please fill all fields correctly")
-        elif not len(ID_no)>=10:
-            st.error("ID No should be of standard length depending on the Id type")
-        else:
-            image = Image.open(Image_file)
-            img_byte_arr = io.BytesIO()
-            image.save(img_byte_arr, format='PNG')
-            img_data = img_byte_arr.getvalue()
-            data = (Name,Gmail,Contact, ID_type, ID_no, Purpose, img_data)
-            db.V_reg(data)
+def A_update(data):
+    """Update admin details in the database."""
+    try:
+        query = '''
+            UPDATE Admin
+            SET Username=?, Gmail=?, Contact=?, Image=?, Password=?
+            WHERE Gmail=? AND Password=?  
+        '''
+        cursor.execute(query,data)  # Corrected
+        conn.commit()
+        return True
+    except sqlite3.Error as e:  # Use specific exception
+        st.error(f"Something went wrong: {e}")
+        conn.rollback()  # Rollback in case of error to maintain data integrity
+        return False
 
-def v_update():
-    st.header("Update Visitor Details")
+def view(Utype):
+    try:
+        if Utype=="Admin":
+            res=cursor.execute(F'''SELECT Id,Username,Gmail, Contact,Image FROM Admin''')
+        elif Utype=="Student":
+            res=cursor.execute(F'''SELECT Id,Name, Roll_No, Gmail, Course, Stream, Year, Photo FROM Student''')    
+        elif Utype=="Faculty":
+            res=cursor.execute(f'''SELECT Id,Name, Gmail, Designation, Photo FROM Faculty''')
+        elif Utype=="Visitor":
+            res=cursor.execute(f'''SELECT Id,Name, Gmail, Contact,Id_type, Id_no, Purpose, Photo FROM Visitor''')
+        elif Utype=="Log":
+            res=cursor.execute(f'''SELECT ID,Usertype,Username,Status,Timestamp,VerificationType FROM Access_Logs''')
+        st.success(f"{Utype} Database Found Successfully")
+        return res
+    except Exception as e:
+        st.error(e)
 
-    method = st.radio("Search by:", ["Contact", "Gmail"])
-    input_val = st.text_input(f"Enter {method}")
-
-    if st.button("Fetch Visitor",type="primary"):
-        if not input_val:
-            st.error(f"Please enter the {method}.")
-        else:
-            if method == "Contact":
-                visitor = db.V_view_by_contact(input_val)
-            else:
-                visitor = db.V_view_by_gmail(input_val)
-
-            if visitor:
-                st.session_state.visitor_data = visitor
-            else:
-                st.error("Visitor not found.")
-
-    if "visitor_data" in st.session_state:
-        visitor = st.session_state.visitor_data
-
-        with st.form("Visitor Update Form", clear_on_submit=True):
-            c1,c2=st.columns(2)
-            with c1:
-                name = st.text_input("Name", value=visitor[1])
-                gmail = st.text_input("Gmail", value=visitor[2])
-                contact = st.text_input("Contact", value=visitor[3])
-                id_type = st.selectbox("ID Type", ["Aadhar Card", "Driving Licence", "Pan Card", "Other"], index=0)
-                id_number = st.text_input("ID Number", value=visitor[5])
-                purpose = st.text_area("Purpose", value=visitor[6])
-            with c2:
-                if visitor[7]:
-                    st.image(Image.open(io.BytesIO(visitor[7])), caption="Visitor Photo", use_container_width=True)
-                photo = st.camera_input("Capture Image")
-            submitted = st.form_submit_button("Update Visitor", type="primary")
-
-        if submitted:
-            photo_bytes = photo.read() if photo else visitor[7]
-
-            updated = db.V_update(
-                visitor[0], name, gmail, contact,
-                id_type, id_number, purpose, photo_bytes
-            )
-            if updated:
-                st.success("✅ Visitor details updated successfully.")
-                st.session_state.visitor_data = db.V_view_by_contact(contact)
-            else:
-                st.error("❌ Failed to update visitor details.")
-
-def v_delete():
-    gmail = st.text_input("Enter Visitor Gmail to delete:")
-
-    if st.button("Delete Visitor", type="primary"):
-        res = db.get_visitor_by_gmail(gmail)
+def get_admin(data):
+    """Fetch admin details from the database based on name and email."""
+    try:
+        query = '''SELECT * FROM Admin WHERE Password=? AND Gmail = ?'''
+        cursor.execute(query, data)
+        res=cursor.fetchone()  # Fetch all matching records
         if res:
-            res=list(res)
-            st.session_state.visitor_to_delete = gmail
-            st.session_state.visitor_found = tuple(res[:7])
+            return True
         else:
-            # Clear old data if no visitor found
-            st.error("No visitor found with this Gmail.")
-            st.session_state.pop("visitor_to_delete", None)
-            st.session_state.pop("visitor_found", None)
+            return False
+    except Exception as e:
+        st.error(e)
+        return False
 
-    if "visitor_to_delete" in st.session_state:
-        confirm = st.checkbox("Are you sure you want to delete this visitor?")
-        button = st.button("Confirm Delete", type="primary")
-        st.write("Visitor Found:", st.session_state.visitor_found)
-        if confirm and button:
-            db.delete_visitor_by_gmail(st.session_state.visitor_to_delete)
-            st.success("Visitor deleted successfully.")
-            # Clean up session state after deletion
-            del st.session_state.visitor_to_delete
-            del st.session_state.visitor_found
+def get_student_by_id(data):
+    cursor.execute("SELECT * FROM Student WHERE Roll_No=?", (data,))
+    result = cursor.fetchone()
+    return result
+
+def V_view_by_contact(contact):
+    cursor.execute("SELECT * FROM visitor WHERE Contact=?", (contact,))
+    result = cursor.fetchone()
+    return result
+
+def V_view_by_gmail(gmail):
+    cursor.execute("SELECT * FROM visitor WHERE Gmail=?", (gmail,))
+    result = cursor.fetchone()
+    return result
+
+def V_update(id, name, gmail, contact, id_type, id_number, purpose, photo):
+    cursor.execute("""
+        UPDATE visitor SET 
+            Name=?, Gmail=?, Contact=?, ID_type=?, ID_no=?, Purpose=?, Photo=? 
+        WHERE id=?
+    """, (name, gmail, contact, id_type, id_number, purpose, photo, id))
+    conn.commit()
+    updated = cursor.rowcount > 0
+    return updated
+
+def save_log(data):
+    try:
+        # Get IST time
+        ist_time = datetime.datetime.now(pytz.timezone('Asia/Kolkata')).strftime('%Y-%m-%d %H:%M:%S')
+
+        # Add timestamp to data tuple
+        data_with_timestamp = data + (ist_time,)
+
+        # Insert into table with manual IST timestamp
+        cursor.execute('''
+            INSERT INTO Access_Logs (Usertype, Username, Status, VerificationType, Timestamp)
+            VALUES (?, ?, ?, ?, ?)
+        ''', data_with_timestamp)
+
+        conn.commit()
+        return True
+    except Exception as e:
+        st.error(e)
+        return False
+    
+# -------- Faculty --------
+def get_faculty_by_gmail(gmail):
+    cursor.execute("SELECT * FROM Faculty WHERE Gmail = ?", (gmail,))
+    result= cursor.fetchone()
+    return result
+
+def delete_faculty_by_gmail(gmail):
+    cursor.execute("DELETE FROM faculty WHERE Gmail = ?", (gmail,))
+    conn.commit()
+
+# -------- Student --------
+def get_student_by_gmail(gmail):
+    cursor.execute("SELECT Id,Name, Roll_No, Gmail, Course, Stream, Year FROM Student WHERE Gmail = ?", (gmail,))
+    return cursor.fetchone()
+
+def delete_student_by_gmail(gmail):
+    cursor.execute("DELETE FROM Student WHERE Gmail = ?", (gmail,))
+    conn.commit()
+    
+# -------- Visitor --------
+def get_visitor_by_gmail(gmail):
+    cursor.execute("SELECT * FROM visitor WHERE Gmail = ?", (gmail,))
+    return cursor.fetchone()
+
+def delete_visitor_by_gmail(gmail):
+    cursor.execute("DELETE FROM visitor WHERE Gmail = ?", (gmail,))
+    conn.commit()
+
+def is_valid_Gmail(gmail,utype):
+    gmail=str.lower(gmail)
+    try:
+        cursor.execute(f"Select Gmail from {utype} where Gmail=?",(gmail,))
+        res=cursor.fetchone()
+        if res:
+            return True
+        else:
+            return False
+    except Exception as e:
+        print(e)
+        return False
