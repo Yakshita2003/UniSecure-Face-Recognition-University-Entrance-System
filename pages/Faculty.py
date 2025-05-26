@@ -89,7 +89,7 @@ def view():
         else:
             data = (str.lower(Gmail), password)
             Faculty = db.FS_view(data)
-            if Faculty or "auth" in st.session_state:
+            if Faculty:
                 st.success("Faculty Found!")
                 c1, c2 = st.columns(2)
                 with c1:
