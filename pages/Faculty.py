@@ -19,7 +19,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-if st.button("Go to Home Page", type="primary"):
+if st.button("Go To Home Page", type="primary"):
     del_encodings()
     for key in list(st.session_state.keys()):
         del st.session_state[key]
@@ -28,12 +28,11 @@ if st.button("Go to Home Page", type="primary"):
 # Function to load a Lottie animation from a URL
 def load_lottie_url(url):
     try:
-        r1 = r.get(url)        
+        r1 = r.get(url)    
         if r1.status_code != 200:
             return None
         return r1.json()  
-    except ValueError as e:
-        print(f"Error decoding JSON: {e}")
+    except Exception:
         return None
 
 # Function to display the Home Page
@@ -46,7 +45,7 @@ def home():
             if lottie_json1:
                 st_lottie(lottie_json1, speed=1, height=200, quality="high", key="lottie1")
             else:
-                st.error("Failed to load Lottie animation.")
+                st.image("pages/portrait-young-male-professor-education-day.png",use_container_width=True)
         with c2:
             st.subheader("Welcome to the Faculty Portal")
             st.write("This portal allows you to register, view visitor records, and perform face recognition for security.")
@@ -73,7 +72,7 @@ def register():
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='PNG')
             img_data = img_byte_arr.getvalue()
-            data = (Name, Gmail, Designation, img_data, Password)
+            data = (Name, str.lower(Gmail), Designation, img_data, Password)
             db.FS_reg(data)
 
 # Function to view Faculty data
@@ -83,20 +82,21 @@ def view():
         Gmail = st.text_input("Gmail")
         password = st.text_input("Password", type="password")
         submit = st.form_submit_button("View",type="primary")
-
-    if submit:
+    
+    if submit :
         if not Gmail or not password:
             st.error("Please fill the form correctly")
         else:
-            data = (Gmail, password)
+            data = (str.lower(Gmail), password)
             Faculty = db.FS_view(data)
-            if Faculty:
+            if Faculty or "auth" in st.session_state:
                 st.success("Faculty Found!")
                 c1, c2 = st.columns(2)
                 with c1:
                     st.write(f"Name: {Faculty[1]}")
                     st.write(f"Gmail: {Faculty[2]}")
                     st.write(f"Designation: {Faculty[3]}")
+                    st.write(f"Password: {Faculty[5]}")
                 with c2:
                     if Faculty[4]:
                         st.image(Image.open(io.BytesIO(Faculty[4])), caption="Faculty Photo", use_container_width=True)
@@ -157,7 +157,7 @@ def show_faculty_update_form(res):
                 img_data = res[4]
 
             result = db.f_update((
-            Name, Gmail, Designation, img_data, Password,
+            Name, str.lower(Gmail), Designation, img_data, Password,
             res[2], res[5]  # old Gmail, old Password
             ))  
 
@@ -189,7 +189,7 @@ def update():
         if st.button("Logout", type="primary"):
             st.session_state.faculty_authenticated = False
             st.session_state.faculty_data = None
-            st.experimental_rerun()
+            st.rerun()
         show_faculty_update_form(st.session_state.faculty_data)
 
 Utype="Faculty"
