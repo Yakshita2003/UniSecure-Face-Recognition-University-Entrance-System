@@ -36,12 +36,11 @@ if "admin_name" not in st.session_state:
 # Function to load a Lottie animation from a URL
 def load_lottie_url(url):
     try:
-        r1 = r.get(url)        
-        if r1.status_code != 200:
+        response = r.get(url, timeout=5)  # Set a timeout to avoid hanging
+        if response.status_code != 200:
             return None
-        return r1.json()  
-    except ValueError as e:
-        print(f"Error decoding JSON: {e}")
+        return response.json()
+    except Exception:
         return None
 
 # Admin Login Function
@@ -126,9 +125,16 @@ def home():
         lottie_json1 = load_lottie_url(lottie_url1)
         
         if lottie_json1:
-            st_lottie(lottie_json1, speed=1, height=200, quality="high", key="lottie1")
+            st_lottie(lottie_json1, speed=1, height=275, quality="high", key="lottie1")
         else:
-            st.error("Failed to load Lottie animation.")
+            c,c1,c2=st.columns([0.25,2.5,0.25])
+            with c:
+                pass
+            with c1:
+                st.image("pages/6976378_4565.jpg",use_container_width=True)
+            with c2:
+                pass
+            
 
 # Function for Admin registration
 def register():
