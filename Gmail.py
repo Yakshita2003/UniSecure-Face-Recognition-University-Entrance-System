@@ -10,29 +10,11 @@ def generate_otp():
     return ''.join([str(random.randint(0, 9)) for _ in range(6)])
 
 def send_otp(receiver_email, otp):
-    sender_email = "unisecure25@gmail.com"
-    sender_password = "iugy yequ xleq jujc"
+    sender_email = "Your Gmail"
+    sender_password = "Your App Password"
 
     subject = "Your OTP for Verification"
     body = f"Your One Time Password (OTP) is: {otp}"
-
-    message = EmailMessage()
-    message["From"] = sender_email
-    message["To"] = receiver_email
-    message["Subject"] = subject
-    message.set_content(body)
-
-    context = ssl.create_default_context() 
-    with smtplib.SMTP_SSL("smtp.gmail.com", 465, context=context) as server:
-        server.login(sender_email, sender_password)
-        server.send_message(message)
-
-def send_password(receiver_email,res):
-    sender_email = "unisecure25@gmail.com"
-    sender_password = "iugy yequ xleq jujc"
-
-    subject = "Your OTP for Verification"
-    body = f"Your UniSecure Id login password is: {res}"
 
     message = EmailMessage()
     message["From"] = sender_email
