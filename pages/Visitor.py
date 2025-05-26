@@ -19,7 +19,7 @@ st.markdown(
     unsafe_allow_html=True
 )
 
-if st.button("Go To Home Page",type="primary"):
+if st.button("Go To Home Page ",type="primary"):
     del_encodings()
     for key in list(st.session_state.keys()):
         del st.session_state[key]
@@ -34,13 +34,12 @@ def load_lottie_url(url):
         if r1.status_code != 200:
             return None
         return r1.json()  
-    except ValueError as e:
-        print(f"Error decoding JSON: {e}")
+    except Exception:
         return None
 
 # Function to display the Home Page
 def home():
-    col1, col2 = st.columns([1, 2])
+    col1, col2 = st.columns([1, 1])
     with col1:
         st.subheader("Welcome to the Visitor Portal!")
         st.write(
@@ -52,8 +51,14 @@ def home():
         if lottie_json1:
             st_lottie(lottie_json1, speed=1, height=250, quality="high", key="lottie1")
         else:
-            st.error("Failed to load Lottie animation.")
-
+            c,c1,c2=st.columns(3)
+            with c:
+                pass
+            with c1:
+                st.image("pages/istockphoto-1483562317-612x612.jpg",width=200)
+            with c2:
+                pass
+            
 # Function for Visitor registration
 def register():
     st.header("Registration Page")
@@ -68,7 +73,7 @@ def register():
             Purpose = st.text_input("Visiting Purpose")
         with c2:
             Image_file = st.camera_input("Capture Image")
-        submit = st.form_submit_button("Submit",type="primary")
+        submit = st.form_submit_button("Register",type="primary")
     
     if submit:
         if not Name or not Contact or not ID_type or not ID_no or not Purpose or not Image_file or not Gmail:
@@ -80,7 +85,7 @@ def register():
             img_byte_arr = io.BytesIO()
             image.save(img_byte_arr, format='PNG')
             img_data = img_byte_arr.getvalue()
-            data = (Name,Gmail,Contact, ID_type, ID_no, Purpose, img_data)
+            data = (Name,str.lower(Gmail),Contact, ID_type, ID_no, Purpose, img_data)
             db.V_reg(data)
 
 def verify_id(visitor):
@@ -182,7 +187,7 @@ def update():
                     photo_bytes = photo.read() if photo else visitor[7]
 
                     updated = db.V_update(
-                        visitor[0], name, gmail, contact,
+                        visitor[0], name, str.lower(gmail), contact,
                         id_type, id_number, purpose, photo_bytes
                     )
                     if updated:
