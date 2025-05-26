@@ -28,8 +28,8 @@ def load_encodings():
                 return data  # Return encodings and names
     return [], []  # If file doesn't exist or is invalid, return empty lists
 
+# Face recognition logic with session state
 def recognize(Utype, Vtype):
-    # Initialize step-based session state for face recognition
     if "face_step" not in st.session_state:
         st.session_state.face_step = 1
     if "face_verified" not in st.session_state:
@@ -37,11 +37,10 @@ def recognize(Utype, Vtype):
     if "Face-recognition_logged_out" not in st.session_state:
         st.session_state["Face-recognition_logged_out"] = True
 
-    # Logout button
+    # Logout
     if st.button("Logout", type="primary"):
         for key in ["face_step", "face_verified", "Face-recognition_logged_out"]:
-            if key in st.session_state:
-                st.session_state[key] = False if "verified" in key else True
+            st.session_state[key] = False if "verified" in key else True
         st.info("ℹ️ You have been logged out.")
         st.rerun()
 
@@ -49,32 +48,28 @@ def recognize(Utype, Vtype):
 
     if st.session_state.face_step == 1:
         st.info("🔒 Please capture your image for verification.")
-        c1,c2=st.columns(2)
+        c1, c2 = st.columns(2)
         with c1:
             image_file = st.camera_input(f"{Utype} face")
-
             if image_file:
                 st.session_state.face_image = image_file
                 st.session_state.face_step = 2
                 st.rerun()
-        with c2: 
-            print('')
-        
+        with c2:
+            pass  # Placeholder
+
     elif st.session_state.face_step == 2:
         if "face_image" in st.session_state:
             st.info("🔍 Verifying your face...")
             image = Image.open(st.session_state.face_image)
             opencv_image = cv2.cvtColor(np.array(image), cv2.COLOR_RGB2BGR)
-            recognize_frame(opencv_image, Utype, Vtype)
+            is_verified = recognize_frame(opencv_image, Utype, Vtype)
 
-            st.session_state.face_verified = True
-            if st.session_state.face_verified:
+            st.session_state.face_verified = is_verified
+            if is_verified:
                 st.success("✅ Face verified successfully!")
             else:
                 st.error("❌ Face verification failed.")
-                st.session_state.face_step = 1  # Optionally loop back
-                st.session_state.face_step = 3
-                st.rerun()
         else:
             st.warning("⚠️ No image found. Please capture again.")
             st.session_state.face_step = 1
@@ -127,51 +122,53 @@ def recognize_frame(frame, Utype, Vtype):
 
     name = "No Face Detected"  # Default name
     status = "No Access Attempt"  # Default access status
+    verified = False  # Default: not verified
 
     # Compare each detected face to registered faces
     for face_encoding, (top, right, bottom, left) in zip(face_encodings, face_locations):
-        face_distances = face_recognition.face_distance(registered_face_encodings, face_encoding)  # Compare to known encodings
+        face_distances = face_recognition.face_distance(registered_face_encodings, face_encoding)
         if len(face_distances) == 0:
-            continue  # Skip if no registered faces
+            continue
 
-        best_match_index = np.argmin(face_distances)  # Get the best match index
-        match_score = face_distances[best_match_index]  # Get distance score
+        best_match_index = np.argmin(face_distances)
+        match_score = face_distances[best_match_index]
 
-        if match_score < 0.5:  # If similarity is strong (low distance)
-            matched_person = registered_face_names[best_match_index]  # Get matched name
+        if match_score < 0.5:
+            matched_person = registered_face_names[best_match_index]
             name = matched_person['name']
             status = "Access Granted"
             color = (0, 255, 0)  # Green box
+            verified = True
         else:
             name = "Unknown"
             status = "Access Denied"
             color = (0, 0, 255)  # Red box
 
-        # Draw rectangle and name label on image (scaled back up by 2x)
+        # Draw rectangle and name label
         cv2.rectangle(frame, (left*2, top*2), (right*2, bottom*2), color, 2)
         cv2.putText(frame, name, (left*2, top*2 - 10), cv2.FONT_HERSHEY_SIMPLEX, 0.8, color, 2)
+        detected_faces.append(f"**{name} ({status})**")
 
-        detected_faces.append(f"**{name} ({status})**")  # Append results for display
-
-    # Split screen into image and result column
-    col1, col2 = st.columns([1.8,1])
+    # Show results
+    col1, col2 = st.columns([1.8, 1])
     with col1:
         st.write("Result")
-        st.image(frame, channels="BGR")  # Display annotated image
+        st.image(frame, channels="BGR")
 
     with col2:
         if detected_faces:
             st.markdown("### Detected:")
-            st.markdown("\n\n".join(detected_faces))  # Show who was detected
+            st.markdown("\n\n".join(detected_faces))
         else:
-            st.warning("⚠️ No recognizable face found.")  # If no faces matched
+            st.warning("⚠️ No recognizable face found.")
 
-        res = db.save_log((Utype, name, Vtype, status))  # Save log to DB
+        res = db.save_log((Utype, name, status, Vtype))
         if res:
             st.success("Log Saved Successfully")
         else:
-            st.error("Something went wrong")  # Handle DB save error
+            st.error("Something went wrong")
 
+    return verified  # Return the verification result
 
 def admin_recognize(image, Uname, Vtype="Face Recognition"):
     # Load encodings from database
@@ -203,13 +200,13 @@ def admin_recognize(image, Uname, Vtype="Face Recognition"):
                 if matched_person['name'].lower() == Uname.lower():
                     match_found = True
                     name = matched_person['name']
-                    status = "Access Granted"
+                    status = "(Admin Login) Access Granted"
                     break  # Exit loop on successful match
             else:
                 name = "Unknown"
-                status = "Access Denied"
+                status = "(Admin Login) Access Denied"
 
-        result = db.save_log(("Admin", name, Vtype, status))
+        result = db.save_log(("Admin", name,status,Vtype))
         if result:
             st.success("Log saved successfully.")
         else:
